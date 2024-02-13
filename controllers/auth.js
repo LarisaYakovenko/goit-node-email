@@ -33,6 +33,7 @@ export const register = async (req, res) => {
             avatarURL,
             verificationCode,
         });
+
         const verifyEmail = {
             to: email,
             subject: "Verify email",
@@ -49,18 +50,69 @@ export const register = async (req, res) => {
         })
     }
     catch (error) {
-        next(error);
+        next(error)
     }
 }
 
+export const verifyEmail = async (req, res) => {
+    try {
+        const { verificationCode } = req.params;
+        const user = await User.findOne({ verificationCode });
+        if (!user) {
+            throw HttpError(404, "User not found")
+        }
+        await User.findByIdAndUpdate(user._id, { verify: true, verificationCode: "" });
+
+        res.lson({
+            message: "Email verify success"
+        })
+        
+    }
+    catch (error) {
+        next(error)
+    }
+}
+
+export const resendVerifyEmail = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) {
+        throw HttpError(401, "Email not found");
+        }
+        if (user.verify) {
+        throw HttpError(401, "Email already verify");
+        }
+
+        const verifyEmail = {
+            to: email,
+            subject: "Verify email",
+            html: `<a target="_blank" href="${BASE_URL}/users/verify/${user.verificationCode }">Click verify email</a>`
+        };
+    
+        await sendEmail(verifyEmail);
+
+        res.json({
+            message: "Verify email send success"
+        })    
+    }
+    catch (error) {
+        next(error)
+    }
+} 
 
 export const login = async (req, res) => {
     try {
-         const { email, password } = req.body;
+        const { email, password } = req.body;
         const user = await User.findOne({ email });
         if (!user) {
             throw HttpError(401, "Email or password invalid");
         }
+
+        if (!user.verify) {
+            throw HttpError(401, "Email not verify");
+        }
+
         const passwordCompare = await bcrypt.compare(password, user.password);
         if (!passwordCompare) {
             throw HttpError(401, "Email or password invalid");
