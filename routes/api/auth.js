@@ -12,7 +12,7 @@ import { registerSchema, loginSchema, updateSubscriptionSchema, emailSchema}from
 const authRouter = express.Router();
 
 authRouter.post("/register", validateBody(registerSchema), register);
-authRouter.get("/verify/:verificationCode", verifyEmail);
+authRouter.get("/verify/:verificationToken", verifyEmail);
 authRouter.post("/verify", validateBody(emailSchema), resendVerifyEmail);
 authRouter.post("/login", validateBody(loginSchema), login);
 authRouter.get("/current", authenticate, getCurrent);
